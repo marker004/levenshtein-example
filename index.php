@@ -1,117 +1,111 @@
 <?
 
-$testDictionaryArray = array(
-'Fernando',
-'Abad',
-'Matt',
-'Barnes',
-'Clay',
-'Buchholz',
-'Roenis',
-'Elias',
-'Craig',
-'Kimbrel',
-'Drew',
-'Pomeranz',
-'Rick',
-'Porcello',
-'David',
-'Price',
-'Eduardo',
-'Rodriguez',
-'Robbie ',
-'Ross Jr.',
-'Junichi',
-'Tazawa',
-'Steven',
-'Wright',
-'Brad',
-'Ziegler',
-'Bryan',
-'Holaday',
-'Sandy',
-'Leon',
-'Xander',
-'Bogaerts',
-'Aaron',
-'Hill',
-'Dustin',
-'Pedroia',
-'Hanley',
-'Ramirez',
-'Travis',
-'Shaw',
-'Andrew',
-'Benintendi',
-'Mookie',
-'Betts',
-'Jackie ',
-'Bradley Jr.',
-'Brock',
-'Holt',
-'David',
-'Ortiz',
+$test_dictionary_array = array(
+'Fernando'=>array('Abad'),
+'Abad'=>array('Fernando'),
+'Matt'=>array('Barnes'),
+'Barnes'=>array('Matt'),
+'Clay'=>array('Buccholz'),
+'Buchholz'=>array("Clay"),
+'Roenis'=>array('Elias'),
+'Elias'=>array('Roenis'),
+'Craig'=>array('Kimbrel'),
+'Kimbrel'=>array('Craig'),
+'Drew'=>array('Pomeranz'),
+'Pomeranz'=>array('Drew'),
+'Rick'=>array('Porcello'),
+'Porcello'=>array('Rick'),
+'David'=>array('Price', 'Ortiz'),
+'Price'=>array('David'),
+'Eduardo'=>array('Rodriguez'),
+'Rodriguez'=>array('Eduardo'),
+'Robbie'=>array('Ross Jr.'),
+'Ross Jr.'=>array('Robbie'),
+'Junichi'=>array('Tazawa'),
+'Tazawa'=>array('Junichi'),
+'Steven'=>array('Wright'),
+'Wright'=>array('Steven'),
+'Brad'=>array('Ziegler'),
+'Ziegler'=>array('Brad'),
+'Bryan'=>array('Holaday'),
+'Holaday'=>array('Bryan'),
+'Sandy'=>array('Leon'),
+'Leon'=>array('Sandy'),
+'Xander'=>array('Bogaerts'),
+'Bogaerts'=>array('Xander'),
+'Aaron'=>array('Hill'),
+'Hill'=>array('Aaron'),
+'Dustin'=>array('Pedroia'),
+'Pedroia'=>array('Dustin'),
+'Hanley'=>array('Ramirez'),
+'Ramirez'=>array('Hanley'),
+'Travis'=>array('Shaw'),
+'Shaw'=>array('Travis'),
+'Andrew'=>array('Benintendi'),
+'Benintendi'=>array('Andrew'),
+'Mookie'=>array('Betts'),
+'Betts'=>array('Mookie'),
+'Jackie'=>array('Bradley Jr.'),
+'Bradley Jr.'=>array('Jackie'),
+'Brock'=>array('Holt'),
+'Holt'=>array('Brock'),
+'Ortiz'=>array('David'),
 );
 
 
-function findClosestWord($query, $dictionary, $acceptableDistance = 2){
+// PASS ALREADY SUGGESTED TERM INTO THIS FUNCTION TO GET SUGGESTIONS FOR NEXT WORD
+function related_terms($query, $dictionary){
+  if (!isset($dictionary[$query])) {
+    return false;
+  }
+  else{
+    return $dictionary[$query];
+  }
+}
+
+function spell_check($query, $dictionary, $acceptableDistance = 2){
   $shortest = -1;
-
   $closest = [];
-
   $lower_query = trim(strtolower($query));
 
-  foreach ($dictionary as $word) {
+  foreach ($dictionary as $word=>$value) {
     $lower_word = strtolower($word);
-    $lev = levenshtein($lower_query, $lower_word);
-
-    // echo $word . ': ' . $lev."<br>";
+    $lev_distance = levenshtein($lower_query, $lower_word);
 
     // if exact match
-    if ($lev == 0) {
-
-      $closest = [$word];
+    if ($lev_distance == 0) {
+      $closest = ["terms"=>array($word)];
       $shortest = 0;
-
       break;
     }
 
-    // if this distance is less than the next found shortest
-    // distance, OR if a next shortest word has not yet been found
-    if ($lev <= $shortest || $shortest < 0) {
-      if($lev < $shortest) {
-        $closest = [$word];
-        // array_push($closest, $word);
+    // if this matches or eclipses shortest distance
+    if ($lev_distance <= $shortest || $shortest < 0) {
+      // eclipses
+      if($lev_distance < $shortest) {
+        $closest = ["terms"=>array($word)];
       }
+      // matches
       else{
-        array_push($closest, $word);
-
+        array_push($closest['terms'], $word);
       }
-        $shortest = $lev;
+      $shortest = $lev_distance;
      }
   }
 
-  echo "Input word: ". $query."<br>";
-
-  // if the query is close enough to a word
-  if ($shortest <= $acceptableDistance) {
-    if ($shortest == 0) {
-      echo "Exact match found: ". $closest[0]."<br>";
-    }
-    else {
-      echo "Here are ".count($closest)." close matches:<br>";
-      foreach ($closest as $word) {
-          echo $word."<br>";
-      }
-    }
+  if($shortest == 0){
+    $closest['exact'] = true;
   }
   else{
-    echo "no close matches";
+    $closest['exact'] = false;
   }
-
-  echo '<br>';
-  echo '<br>';
-
+  // if the query is close enough to a word
+  if ($shortest <= $acceptableDistance) {
+    return $closest;
+  }
+  else{
+    return false;
+  }
 
 }
 
@@ -124,17 +118,39 @@ function findClosestWord($query, $dictionary, $acceptableDistance = 2){
     <title>Levenshtein</title>
   </head>
   <body>
+    <form class="" action="" method="post">
+      <label for="query">Input string to compare against Red Sox Roster names.</label><br>
+      <input type="text" name="query" id="query" autofocus value="<? echo $_POST['query'] ?>">
+      <input type="submit">
+    </form>
+    <br>
     <?
       if (isset($_POST['query'])) {
         $query = $_POST['query'];
-        findClosestWord($query, $testDictionaryArray, 2);
+        echo "Input word: ". $query."<br>";
+        $spell_check = spell_check($query, $test_dictionary_array, 2);
+        if ($spell_check) {
+          if ($spell_check['exact']) {
+            echo 'Exact match:<br>';
+          }
+          else {
+            echo 'Potential matches:<br>';
+          }
+          foreach ($spell_check["terms"] as $word) {
+            echo $word."<br>";
+          }
+        }
+        echo '<br>';
+        if ($spell_check['exact']) {
+          $related_terms = related_terms($spell_check["terms"][0], $test_dictionary_array);
+          if ($related_terms) {
+            echo 'Related Terms:<br>';
+            foreach ($related_terms as $word) {
+              echo $word."<br>";
+            }
+          }
+        }
       }
     ?>
-
-    <form class="" action="" method="post">
-      <label for="query">Input string to compare against Red Sox Roster names.</label><br>
-      <input type="text" name="query" id="query" autofocus>
-      <input type="submit">
-    </form>
   </body>
 </html>
