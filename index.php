@@ -115,7 +115,7 @@ function spell_check($query, $dictionary, $acceptableDistance = 2){
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Levenshtein</title>
+    <title>Levenshtein Example</title>
   </head>
   <body>
     <form class="" action="" method="post">
